@@ -42,6 +42,27 @@ elif page == "Add task":
         st.subheader("Your tasks")
         st.dataframe(saved)
 
+elif page == "Energy check-in":
+    st.header("How is your energy right now?")
+    part = st.selectbox("Part of day", ["morning", "afternoon", "evening"])
+    cols = st.columns(5)
+    for rating, col in enumerate(cols, start=1):
+        if col.button(str(rating), use_container_width=True, key=f"energy{rating}"):
+            ratings = load("energy")
+            ratings.append({
+                "date": date.today().isoformat(),
+                "part": part,
+                "rating": rating,
+            })
+            save("energy", ratings)
+            st.success(f"Logged {rating} out of 5 for the {part}.")
+    st.caption("1 is very low energy, 5 is very high.")
+
+    logged = load("energy")
+    if logged:
+        st.subheader("Recent check-ins")
+        st.dataframe(logged[-10:])
+
 else:
     st.header(page)
     st.write("Coming soon.")
