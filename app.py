@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import date
+from datetime import date, time
 from storage import load, save
 
 st.set_page_config(page_title="Luma")
@@ -10,6 +10,7 @@ page = st.sidebar.radio(
 )
 
 LEVELS = {1: "Easy", 2: "Medium", 3: "Hard"}
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 if page == "Today":
     st.title("Luma")
@@ -62,6 +63,43 @@ elif page == "Energy check-in":
     if logged:
         st.subheader("Recent check-ins")
         st.dataframe(logged[-10:])
+
+elif page == "Commitments":
+    st.header("Weekly commitments")
+    st.caption("Classes, practices, clubs, and other fixed events.")
+    with st.form("add_commitment", clear_on_submit=True):
+        name = st.text_input("Title")
+        weekday = st.selectbox("Day", range(7), format_func=lambda d: DAYS[d])
+        start = st.time_input("Starts", value=time(16, 0))
+        end = st.time_input("Ends", value=time(18, 0))
+        submitted = st.form_submit_button("Add commitment")
+    if submitted and name:
+        if end <= start:
+            st.error("The end time must be after the start time.")
+        else:
+            items = load("commitments")
+            items.append({
+                "title": name,
+                "weekday": weekday,
+                "start": start.strftime("%H:%M"),
+                "end": end.strftime("%H:%M"),
+            })
+            save("commitments", items)
+            st.success(f"Added: {name}")
+
+    items = load("commitments")
+    if items:
+        st.subheader("Your week")
+        rows = [
+            {
+                "Title": i["title"],
+                "Day": DAYS[i["weekday"]],
+                "Starts": i["start"],
+                "Ends": i["end"],
+            }
+            for i in sorted(items, key=lambda i: (i["weekday"], i["start"]))
+        ]
+        st.dataframe(rows)
 
 else:
     st.header(page)
